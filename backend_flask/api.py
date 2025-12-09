@@ -1,6 +1,7 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
+import os
 
 api = Flask(__name__)
 
@@ -38,5 +39,5 @@ def add_item():
     return {"id": item.id, "text": item.text}, 201
 
 if __name__ == "__main__":
-    api.run(host="0.0.0.0", port=5000)
-
+    port = int(os.environ.get("PORT", 5000))
+    api.run(host="0.0.0.0", port=port)
