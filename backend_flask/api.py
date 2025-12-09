@@ -5,7 +5,17 @@ import os
 
 api = Flask(__name__)
 
-api.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///items.db"
+# --- CONFIGURACIÓN DE POSTGRES ---
+DATABASE_URL = os.environ.get("DATABASE_URL")
+
+if not DATABASE_URL:
+    raise Exception("DATABASE_URL no está definida en las variables de entorno")
+
+# Render a veces envía URLs postgres:// pero SQLAlchemy espera postgresql://
+if DATABASE_URL.startswith("postgres://"):
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+
+api.config["SQLALCHEMY_DATABASE_URI"] = DATABASE_URL
 api.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
 db = SQLAlchemy(api)
@@ -15,6 +25,7 @@ class Item(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     text = db.Column(db.String(200), nullable=False)
 
+# Crear las tablas si no existen
 with api.app_context():
     db.create_all()
 
@@ -33,9 +44,11 @@ def add_item():
     text = data.get("text")
     if not text:
         return {"msg": "Texto requerido"}, 400
+    
     item = Item(text=text)
     db.session.add(item)
     db.session.commit()
+
     return {"id": item.id, "text": item.text}, 201
 
 if __name__ == "__main__":
