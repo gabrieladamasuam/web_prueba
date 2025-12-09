@@ -5,13 +5,13 @@ import os
 
 api = Flask(__name__)
 
-# --- CONFIGURACIÓN DE POSTGRES ---
+# Obtener la DATABASE_URL definida en Render
 DATABASE_URL = os.environ.get("DATABASE_URL")
 
 if not DATABASE_URL:
-    raise Exception("DATABASE_URL no está definida en las variables de entorno")
+    raise Exception("DATABASE_URL no está definida en Render.")
 
-# Render a veces envía URLs postgres:// pero SQLAlchemy espera postgresql://
+# Render puede dar la URL como postgres:// pero SQLAlchemy necesita postgresql://
 if DATABASE_URL.startswith("postgres://"):
     DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
 
@@ -21,11 +21,12 @@ api.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 db = SQLAlchemy(api)
 CORS(api)
 
+# Modelo Item para la prueba
 class Item(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     text = db.Column(db.String(200), nullable=False)
 
-# Crear las tablas si no existen
+# Crear tablas automáticamente
 with api.app_context():
     db.create_all()
 
@@ -42,9 +43,10 @@ def list_items():
 def add_item():
     data = request.get_json()
     text = data.get("text")
+    
     if not text:
         return {"msg": "Texto requerido"}, 400
-    
+
     item = Item(text=text)
     db.session.add(item)
     db.session.commit()
